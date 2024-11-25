@@ -1,8 +1,11 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Hosting;
+using Steeltoe.Common.Util;
 using System;
 using System.Text;
 using System.Threading.Tasks;
+using static StackExchange.Redis.Role;
 
 namespace RedisSample4.Controllers
 {
@@ -79,6 +82,19 @@ namespace RedisSample4.Controllers
 
             return Ok($"Default cache set: Key='{key}', Value='{value}'");
         }
+
+        [HttpPost("setWithExpiration")]
+        public async Task<IActionResult> SetCacheValueWithExpiration([FromQuery] string key, [FromQuery] string value, [FromQuery] int expirationInSeconds)
+        {
+            var options = new DistributedCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(expirationInSeconds)
+            };
+
+            await _cache.SetStringAsync(key, value, options);
+            return Ok($"Key '{key}' set to '{value}' in cache with expiration of {expirationInSeconds} seconds.");
+        }
+
     }
 }
 /*
@@ -98,3 +114,18 @@ Set Default Cache (GET: api/cache/set-default):
 
 Demonstrates setting a default key-value pair in the cache.
 */
+
+/********************************Testing expiry ***************************************/
+//Manual Testing with Postman
+//Set Cache with Expiration:
+
+//Endpoint: POST http://localhost:5000/api/cache/setWithExpiration?key=testKey&value=testValue&expirationInSeconds=10
+//This sets the cache value with an expiration of 10 seconds.
+//Retrieve Cache Before Expiration:
+
+//Endpoint: GET http://localhost:5000/api/cache/get/testKey
+//Make this call within 10 seconds to verify that the cache value is available.
+//Retrieve Cache After Expiration:
+
+//Wait for 10 seconds (or the expiration time you set).
+//Make the same GET request again. You should see a "Key not found in cache." response.

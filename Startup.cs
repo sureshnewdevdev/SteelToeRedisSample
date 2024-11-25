@@ -18,18 +18,23 @@ namespace SteeltoeRedisCacheSample
 
         public void ConfigureServices(IServiceCollection services)
         {
+            // Read Redis configuration from appsettings.json
+            var redisHost = Configuration["Redis:Host"];
+            var redisPort = Configuration["Redis:Port"];
+            var redisInstanceName = Configuration["Redis:InstanceName"];
+
             // Add Redis ConnectionMultiplexer
             services.AddSingleton<IConnectionMultiplexer>(sp =>
             {
-                var redisOptions = ConfigurationOptions.Parse("127.0.0.1:6379");
+                var redisOptions = ConfigurationOptions.Parse($"{redisHost}:{redisPort}");
                 return ConnectionMultiplexer.Connect(redisOptions);
             });
 
             // Add Distributed Cache using Redis
             services.AddStackExchangeRedisCache(options =>
             {
-                options.Configuration = "127.0.0.1:6379";
-                options.InstanceName = "RedisInstance";
+                options.Configuration = $"{redisHost}:{redisPort}";
+                options.InstanceName = redisInstanceName;
             });
 
             // Add Controllers
